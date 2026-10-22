@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resource Hub</title>
+<style>
+:root{--ink:#1e2a4a;--paper:#f4f6fa;--rule:#d3dcf1;--margin:#e5484d;--mark:#ffe066;--muted:#5d6784;--line:#c8d0e4;--bad:#b4232a;--good:#17703b}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font:16px/1.5 "Segoe UI",system-ui,sans-serif;color:var(--ink);background:var(--paper)}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;font-weight:700;letter-spacing:-.01em;margin:0}
+button,input{font:inherit}
+:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+
+/* sign-in screen */
+#auth{display:grid;grid-template-columns:1.1fr 1fr;min-height:100vh}
+.page{position:relative;padding:72px 48px 48px 96px;background:#fff;
+ background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 35px,var(--rule) 35px,var(--rule) 36px);
+ border-right:1px solid var(--line)}
+.page::before{content:"";position:absolute;left:68px;top:0;bottom:0;width:2px;background:var(--margin);opacity:.7}
+.page h1{font-size:clamp(2rem,4vw,3.1rem);line-height:72px;max-width:11em}
+.page h1 span{background:linear-gradient(transparent 55%,var(--mark) 55%)}
+.page p{margin:0;line-height:36px;color:var(--muted);max-width:26em}
+.panel{display:flex;align-items:center;justify-content:center;padding:32px}
+.card{width:100%;max-width:380px}
+.card h2{font-size:1.7rem;margin-bottom:4px}
+.sub{color:var(--muted);margin:0 0 20px}
+label{display:block;font-weight:600;font-size:.92rem;margin:14px 0 6px}
+input{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+input:focus{border-color:var(--ink);outline:none;box-shadow:0 0 0 3px var(--mark)}
+.otp{font-size:1.6rem;letter-spacing:.5em;text-align:center;font-variant-numeric:tabular-nums}
+.btn{display:block;width:100%;margin-top:20px;padding:12px;border:0;border-radius:6px;background:var(--ink);color:#fff;font-weight:600;cursor:pointer}
+.btn:hover{background:#2d3d6b}.btn:disabled{opacity:.6;cursor:wait}
+.link{background:none;border:0;padding:0;color:var(--ink);text-decoration:underline;cursor:pointer;font-weight:600}
+.row{display:flex;justify-content:space-between;align-items:center;margin-top:16px;font-size:.92rem;color:var(--muted)}
+#msg{min-height:1.4em;margin:14px 0 0;font-size:.92rem;font-weight:600}
+#msg.err{color:var(--bad)}#msg.ok{color:var(--good)}
+
+/* signed-in shell */
+#app>header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 5vw;background:var(--ink);color:#fff;flex-wrap:wrap}
+#app>header strong{font-family:Georgia,serif;font-size:1.2rem}
+#app>header .link{color:#fff;margin-left:16px}
+#nav{display:flex;gap:6px}
+.tab{background:none;border:0;color:#cdd5ee;padding:7px 14px;border-radius:6px;font-weight:600;cursor:pointer}
+.tab:hover{color:#fff}.tab.on{background:#fff;color:var(--ink)}
+main{max-width:760px;margin:0 auto;padding:32px 5vw 64px}
+#adminpanel{max-width:940px}
+
+/* library */
+.up{padding:20px;background:#fff;border:1.5px solid var(--line);border-radius:10px}
+.up-row{display:grid;grid-template-columns:1.5fr 1fr;gap:14px}
+.up-row label{margin-top:0}
+.up-row2{display:flex;gap:12px;margin-top:14px;align-items:stretch}
+.drop{position:relative;flex:1;display:flex;align-items:center;gap:14px;min-width:0;margin:0;padding:12px 16px;border:1.5px dashed var(--line);border-radius:8px;background:var(--paper);cursor:pointer;font-weight:400;transition:border-color .18s,background-color .18s}
+.drop:hover,.drop.over,.drop:focus-within{border-color:var(--ink);background:#fff8d6}
+.drop.has{border-style:solid;border-color:var(--ink);background:#fff}
+.drop input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.drop svg{flex:none;width:26px;height:26px;color:var(--ink);transition:transform .2s}
+.drop:hover svg,.drop.over svg{transform:translateY(-2px)}
+.drop-text{min-width:0}
+.drop-text b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.drop-text small{color:var(--muted);font-size:.85rem}
+.up .btn{margin:0;width:auto;min-width:130px;padding:0 26px;position:relative;overflow:hidden}
+.up .btn.done{background:var(--good)}
+.prog{height:4px;margin-top:14px;border-radius:2px;background:var(--rule);overflow:hidden;opacity:0;transition:opacity .2s}
+.prog.on{opacity:1}
+.prog i{display:block;height:100%;width:0;background:var(--ink);transition:width .15s linear}
+main h2{font-size:1.4rem;margin:36px 0 8px}
+.note{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.note b{display:block;overflow-wrap:anywhere}.note small{color:var(--muted)}
+.empty{color:var(--muted);padding:20px 0}
+.dl{padding:7px 14px;border:1.5px solid var(--ink);border-radius:6px;background:none;color:var(--ink);font-weight:600;cursor:pointer;white-space:nowrap}
+.dl:hover{background:var(--ink);color:#fff}
+.dl.no{border-color:var(--bad);color:var(--bad)}.dl.no:hover{background:var(--bad);color:#fff}
+.dl.go{border-color:var(--good);color:var(--good)}.dl.go:hover{background:var(--good);color:#fff}
+.acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+
+/* library: toolbar and note cards */
+#library{max-width:860px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 4px}
+.toolbar input{flex:1 1 220px;width:auto}
+.toolbar select{padding:11px 12px;border:1.5px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);font:inherit}
+.nc{padding:16px 0;border-bottom:1px solid var(--line)}
+.nc-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.nc-head b{font-size:1.05rem;overflow-wrap:anywhere}
+.tag{padding:1px 10px;border-radius:99px;background:#fff8d6;border:1.5px solid #e6cf5c;font-size:.8rem;font-weight:700;color:#6b5600}
+.nc small{display:block;color:var(--muted);margin:2px 0 10px}
+.nc .acts{justify-content:flex-start}
+/* like button: heart, count, and a small burst when you like a note */
+.dl.like{position:relative;display:inline-flex;align-items:center;gap:7px}
+.dl.like svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round;transition:fill .15s}
+.dl.like.on{background:var(--margin);border-color:var(--margin);color:#fff}
+.dl.like.on svg{fill:currentColor}
+.dl.like.pop svg{animation:pop .42s cubic-bezier(.3,1.7,.5,1)}
+.cnt{display:inline-block;min-width:1ch;font-variant-numeric:tabular-nums}
+.cnt.bump{animation:bump .28s ease-out}
+.spark{position:absolute;left:21px;top:50%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:var(--margin);pointer-events:none;animation:spark .55s ease-out forwards}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+@keyframes bump{from{transform:translateY(7px);opacity:0}to{transform:none;opacity:1}}
+@keyframes spark{from{transform:rotate(var(--a)) translateY(0);opacity:1}to{transform:rotate(var(--a)) translateY(-24px);opacity:0}}
+
+/* button feedback */
+.btn,.dl,.tab,.sub-tab{transition:background-color .15s,color .15s,border-color .15s,transform .1s}
+.btn:active:not(:disabled),.dl:active{transform:scale(.97)}
+.btn.loading::after{content:"";display:inline-block;width:14px;height:14px;margin-left:10px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* screens fade in when you switch forms */
+form[data-view]:not([hidden]),section[data-view]:not([hidden]){animation:rise .24s ease-out}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* a new note or comment is highlighted like a marker stroke, then fades */
+.nc.new,.cm-item.new{animation:marker 2.2s ease-out}
+@keyframes marker{0%,35%{background:rgba(255,224,102,.75)}100%{background:rgba(255,224,102,0)}}
+.flash{animation:marker 1.2s ease-out;border-radius:4px}
+
+/* loading placeholder for the notes list */
+.sk{height:78px;margin:14px 0;border-radius:8px;background:linear-gradient(90deg,#e9edf6 25%,#f4f6fa 37%,#e9edf6 63%);background-size:400% 100%;animation:shimmer 1.3s ease-in-out infinite}
+@keyframes shimmer{from{background-position:100% 0}to{background-position:0 0}}
+
+/* messages that appear in the corner */
+#toasts{position:fixed;right:20px;bottom:20px;z-index:50;display:flex;flex-direction:column;gap:10px;max-width:calc(100vw - 40px)}
+.toast{padding:12px 16px;border-radius:8px;background:var(--ink);color:#fff;font-weight:600;font-size:.95rem;border-left:5px solid var(--bad);box-shadow:0 6px 20px rgba(30,42,74,.25);animation:toast-in .28s cubic-bezier(.2,.9,.3,1.2)}
+.toast.ok{border-left-color:#3ccf7a}
+.toast.out{opacity:0;transform:translateY(8px);transition:opacity .22s,transform .22s}
+@keyframes toast-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* comments slide open */
+.cm-wrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows .26s ease}
+.cm-wrap.open{grid-template-rows:1fr}
+.cm-clip{overflow:hidden;min-height:0}
+.cm{margin-top:12px;padding:12px 14px;background:#fff;border:1.5px solid var(--line);border-radius:8px}
+.cm-item{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--rule)}
+.cm-item:last-of-type{border-bottom:0}
+.cm-item p{margin:0;overflow-wrap:anywhere}.cm-item small{margin:0 0 2px}
+.cm-form{display:flex;gap:8px;margin-top:8px}.cm-form input{flex:1}
+.cm-form .dl{background:var(--ink);color:#fff}
+
+/* admin dashboard */
+.subtabs{display:flex;gap:4px;border-bottom:1.5px solid var(--line);margin-bottom:24px;overflow-x:auto}
+.sub-tab{background:none;border:0;padding:10px 16px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1.5px;white-space:nowrap}
+.sub-tab:hover{color:var(--ink)}.sub-tab.on{color:var(--ink);border-bottom-color:var(--ink);background:linear-gradient(transparent 60%,rgba(255,224,102,.55) 60%)}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.tile{padding:16px 18px;background:#fff;border:1.5px solid var(--line);border-radius:8px}
+.tile b{display:block;font:700 2rem/1.1 Georgia,serif}
+.tile span{color:var(--muted);font-size:.9rem}
+.tile.alert{background:#fff8d6;border-color:var(--mark)}
+.panelbox{margin-top:28px}
+.panelbox h3{font-size:1.15rem;margin-bottom:6px}
+.search{max-width:340px;margin-bottom:12px}
+.badge{display:inline-block;padding:1px 9px;border-radius:99px;font-size:.78rem;font-weight:700;margin-left:8px;vertical-align:2px;border:1.5px solid}
+.badge.pending{background:#fff8d6;border-color:#c8a900;color:#6b5600}
+.badge.active{background:#e6f5ec;border-color:#9ccfb0;color:var(--good)}
+.badge.suspended{background:#fdecec;border-color:#e8a5a8;color:var(--bad)}
+.badge.admin{background:var(--ink);border-color:var(--ink);color:#fff}
+.log{display:grid;grid-template-columns:170px 1fr;gap:4px 16px;padding:10px 0;border-bottom:1px solid var(--line)}
+.log time{color:var(--muted);font-size:.88rem}
+.log em{font-style:normal;font-weight:700}
+
+@media(max-width:820px){#auth{grid-template-columns:1fr}.page{display:none}
+ .up-row{grid-template-columns:1fr}.up-row2{flex-direction:column}.up .btn{width:100%;padding:12px}
+ .tiles{grid-template-columns:repeat(2,1fr)}.log{grid-template-columns:1fr}.note{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="auth">
+  <section class="page" aria-hidden="true">
+    <h1>Notes your whole <span>batch</span> can use.</h1>
+    <p>Upload your notes once and everyone in your class can download them.</p>
+  </section>
+
+  <section class="panel"><div class="card">
+
+    <form id="v-login" data-view="login">
+      <h2>Log in</h2><p class="sub">Welcome back.</p>
+      <label for="l-email">Email</label><input id="l-email" type="email" autocomplete="email" required>
+      <label for="l-pw">Password</label><input id="l-pw" type="password" autocomplete="current-password" required>
+      <button class="btn">Log in</button>
+      <div class="row"><button type="button" class="link" data-go="forgot">Forgot password?</button>
+      <span>New here? <button type="button" class="link" data-go="register">Create account</button></span></div>
+    </form>
+
+    <form id="v-register" data-view="register" hidden>
+      <h2>Create account</h2><p class="sub">We’ll email you a code, then an admin approves your account.</p>
+      <label for="r-name">Full name</label><input id="r-name" autocomplete="name" required>
+      <label for="r-email">Email</label><input id="r-email" type="email" autocomplete="email" required>
+      <label for="r-pw">Password</label><input id="r-pw" type="password" minlength="8" autocomplete="new-password" required>
+      <button class="btn">Send verification code</button>
+      <div class="row"><span>Already registered? <button type="button" class="link" data-go="login">Log in</button></span></div>
+    </form>
+
+    <form id="v-verify" data-view="verify" hidden>
+      <h2>Check your email</h2><p class="sub">Enter the 6-digit code we sent you.</p>
+      <label for="o-code">Verification code</label>
+      <input id="o-code" class="otp" inputmode="numeric" maxlength="6" autocomplete="off" required>
+      <button class="btn">Verify and continue</button>
+      <div class="row"><button type="button" class="link" data-resend>Send a new code</button>
+      <button type="button" class="link" data-go="login">Back to log in</button></div>
+    </form>
+
+    <form id="v-forgot" data-view="forgot" hidden>
+      <h2>Reset your password</h2><p class="sub">Enter your email and we’ll send a code.</p>
+      <label for="f-email">Email</label><input id="f-email" type="email" autocomplete="email" required>
+      <button class="btn">Send reset code</button>
+      <div class="row"><button type="button" class="link" data-go="login">Back to log in</button></div>
+    </form>
+
+    <form id="v-reset" data-view="reset" hidden>
+      <h2>Set a new password</h2><p class="sub">Enter the code from your email, then choose a new password.</p>
+      <label for="p-code">Reset code</label>
+      <input id="p-code" class="otp" inputmode="numeric" maxlength="6" autocomplete="off" required>
+      <label for="p-pw">New password</label><input id="p-pw" type="password" minlength="8" autocomplete="new-password" required>
+      <button class="btn">Update password</button>
+      <div class="row"><button type="button" class="link" data-resend>Send a new code</button>
+      <button type="button" class="link" data-go="login">Back to log in</button></div>
+    </form>
+
+    <section data-view="pending" hidden>
+      <h2>Waiting for approval</h2>
+      <p class="sub">Your email is verified. An admin needs to approve your account before you can log in. You’ll get an email when it’s done.</p>
+      <button type="button" class="btn" data-go="login">Back to log in</button>
+    </section>
+
+    <p id="msg" role="status"></p>
+  </div></section>
+</div>
+
+<div id="app" hidden>
+  <header>
+    <strong>Resource Hub</strong>
+    <nav id="nav" hidden>
+      <button class="tab on" data-tab="library">Library</button>
+      <button class="tab" id="nav-admin" data-tab="admin">Admin</button>
+    </nav>
+    <span><span id="who"></span><button class="link" id="logout">Log out</button></span>
+  </header>
+
+  <main id="library">
+    <form class="up" id="upform">
+      <div class="up-row">
+        <div><label for="u-title">Title</label><input id="u-title" placeholder="e.g. Unit 3 notes" maxlength="200" required></div>
+        <div><label for="u-subject">Subject</label><input id="u-subject" list="subjects" placeholder="e.g. Operating Systems" maxlength="60" autocomplete="off" required><datalist id="subjects"></datalist></div>
+      </div>
+      <div class="up-row2">
+        <label class="drop" id="drop" for="u-file">
+          <input id="u-file" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.png,.jpg,.jpeg" required>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>
+          <span class="drop-text"><b id="drop-name">Choose a file or drag it here</b><small id="drop-hint">PDF, Word, PowerPoint, text or image · up to 10 MB</small></span>
+        </label>
+        <button class="btn" id="up-btn">Upload</button>
+      </div>
+      <div class="prog" id="prog" aria-hidden="true"><i></i></div>
+    </form>
+    <h2>Shared notes</h2>
+    <div class="toolbar">
+      <input id="q" type="search" placeholder="Search title, subject or author" aria-label="Search notes">
+      <select id="f-subject" aria-label="Filter by subject"><option value="">All subjects</option></select>
+      <select id="sort" aria-label="Sort notes">
+        <option value="new">Newest</option><option value="downloads">Most downloaded</option><option value="likes">Most liked</option>
+      </select>
+    </div>
+    <div id="list"></div>
+  </main>
+
+  <main id="adminpanel" hidden>
+    <div class="subtabs" role="tablist">
+      <button class="sub-tab on" data-sub="overview">Overview</button>
+      <button class="sub-tab" data-sub="users">Users</button>
+      <button class="sub-tab" data-sub="notes">Notes</button>
+      <button class="sub-tab" data-sub="activity">Activity log</button>
+    </div>
+    <div id="adminbody"></div>
+  </main>
+</div>
+
+<div id="toasts" role="status" aria-live="polite"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let token = localStorage.getItem('token') || '';
+let pending = { email: '', purpose: 'verify' };
+let subTab = 'overview';
+
+function msg(t, ok) { const m = $('#msg'); m.textContent = t || ''; m.className = ok ? 'ok' : 'err'; }
+// Clears every form, so codes, emails and passwords never carry over to the next person.
+function clearForms() { document.querySelectorAll('form').forEach(f => f.reset()); }
+function show(v, note) {
+  if (v === 'verify') $('#o-code').value = '';
+  if (v === 'reset') { $('#p-code').value = ''; $('#p-pw').value = ''; }
+  document.querySelectorAll('[data-view]').forEach(f => f.hidden = f.dataset.view !== v);
+  const first = document.querySelector('[data-view="' + v + '"] input'); if (first) first.focus();
+  msg(note || '', true);
+}
+async function api(url, body, method = 'POST') {
+  const r = await fetch(url, {
+    method, headers: { 'Content-Type': 'application/json', ...(token && { Authorization: 'Bearer ' + token }) },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const d = await r.json().catch(() => ({})); d.ok = r.ok; d.status = r.status; return d;
+}
+async function busy(form, fn) {
+  const b = form.querySelector('.btn'); b.disabled = true;
+  try { await fn(); } catch { msg('Can’t reach the server. Check your connection.'); } finally { b.disabled = false; }
+}
+
+// Small helpers for building the admin screens safely (no innerHTML with user data).
+const el = (tag, cls, ...kids) => { const e = document.createElement(tag); if (cls) e.className = cls; e.append(...kids); return e; };
+const btn = (label, cls, fn) => { const b = el('button', cls, label); b.onclick = fn; return b; };
+const when = s => new Date(s).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+
+function enter(d) {
+  clearForms();
+  token = d.token; localStorage.setItem('token', token); localStorage.setItem('name', d.name); localStorage.setItem('role', d.role || 'user');
+  $('#auth').hidden = true; $('#app').hidden = false; $('#who').textContent = d.name;
+  $('#nav').hidden = d.role !== 'admin';
+  showTab('library'); loadNotes();
+  if (d.role === 'admin') refreshPendingCount();
+}
+function leave() {
+  clearForms(); $('#q').value = ''; $('#sort').value = 'new'; allNotes = [];
+  token = ''; localStorage.clear(); $('#app').hidden = true; $('#auth').hidden = false; show('login');
+}
+
+document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => show(b.dataset.go));
+document.querySelectorAll('[data-resend]').forEach(b => b.onclick = async () => {
+  const d = await api('/api/resend', pending); msg(d.message || d.error, d.ok);
+});
+
+$('#v-login').onsubmit = e => { e.preventDefault(); busy(e.target, async () => {
+  const email = $('#l-email').value, d = await api('/api/login', { email, password: $('#l-pw').value });
+  if (d.ok) return enter(d);
+  if (d.pending) return show('pending');
+  if (d.needsVerify) { pending = { email, purpose: 'verify' }; await api('/api/resend', pending); return show('verify', 'Verify your email first. We sent a new code.'); }
+  msg(d.error);
+}); };
+
+$('#v-register').onsubmit = e => { e.preventDefault(); busy(e.target, async () => {
+  const email = $('#r-email').value;
+  const d = await api('/api/register', { name: $('#r-name').value, email, password: $('#r-pw').value });
+  if (!d.ok) return msg(d.error);
+  pending = { email, purpose: 'verify' }; show('verify', d.message);
+}); };
+
+$('#v-verify').onsubmit = e => { e.preventDefault(); busy(e.target, async () => {
+  const d = await api('/api/verify', { email: pending.email, code: $('#o-code').value });
+  if (!d.ok) return msg(d.error);
+  if (d.pending) { clearForms(); return show('pending'); }
+  enter(d);
+}); };
+
+$('#v-forgot').onsubmit = e => { e.preventDefault(); busy(e.target, async () => {
+  const email = $('#f-email').value, d = await api('/api/forgot', { email });
+  pending = { email, purpose: 'reset' }; show('reset', d.message);
+}); };
+
+$('#v-reset').onsubmit = e => { e.preventDefault(); busy(e.target, async () => {
+  const d = await api('/api/reset', { email: pending.email, code: $('#p-code').value, password: $('#p-pw').value });
+  if (!d.ok) return msg(d.error);
+  clearForms(); show('login', 'Password updated. Log in with your new password.');
+}); };
+
+$('#logout').onclick = leave;
+
+/* ---------- navigation ---------- */
+function showTab(t) {
+  document.querySelectorAll('#nav .tab').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  $('#library').hidden = t !== 'library';
+  $('#adminpanel').hidden = t !== 'admin';
+  if (t === 'admin') showSub(subTab);
+  if (t === 'library') loadNotes();
+}
+document.querySelectorAll('#nav .tab').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+
+function showSub(s) {
+  subTab = s;
+  document.querySelectorAll('.sub-tab').forEach(b => b.classList.toggle('on', b.dataset.sub === s));
+  ({ overview: renderOverview, users: renderUsers, notes: renderAdminNotes, activity: renderActivity })[s]();
+}
+document.querySelectorAll('.sub-tab').forEach(b => b.onclick = () => showSub(b.dataset.sub));
+
+function setPending(n) { $('#nav-admin').textContent = n ? 'Admin (' + n + ')' : 'Admin'; }
+async function refreshPendingCount() { const s = await api('/api/admin/stats', null, 'GET'); if (s.ok) setPending(s.pending); }
+
+// Runs an admin action, then redraws the current screen.
+async function act(url, body, method = 'POST') {
+  const d = await api(url, body, method);
+  if (!d.ok) alert(d.error || 'Something went wrong.');
+  showSub(subTab);
+}
+
+/* ---------- admin: shared pieces ---------- */
+function userRow(u) {
+  const status = u.role === 'admin' ? ['Admin', 'admin'] : !u.approved ? ['Pending', 'pending'] : u.suspended ? ['Suspended', 'suspended'] : ['Active', 'active'];
+  const name = el('b', '', u.name, el('span', 'badge ' + status[1], status[0]));
+  const info = el('div', '', name, el('small', '', u.email + ' · ' + u.notes + ' note' + (u.notes === 1 ? '' : 's') + ' · joined ' + new Date(u.created_at).toLocaleDateString()));
+  const acts = el('div', 'acts');
+  if (u.role === 'admin') { /* admins can't be changed */ }
+  else if (!u.approved) {
+    acts.append(btn('Approve', 'dl go', () => act('/api/admin/approve', { id: u.id })),
+      btn('Reject', 'dl no', () => confirm('Reject and delete the request from ' + u.email + '?') && act('/api/admin/reject', { id: u.id })));
+  } else {
+    acts.append(u.suspended
+      ? btn('Reactivate', 'dl go', () => act('/api/admin/unsuspend', { id: u.id }))
+      : btn('Suspend', 'dl', () => confirm('Suspend ' + u.name + '? They will be logged out and blocked until you reactivate them.') && act('/api/admin/suspend', { id: u.id })),
+      btn('Delete', 'dl no', () => confirm('Permanently delete ' + u.name + ' and all ' + u.notes + ' of their notes? This can’t be undone.') && act('/api/admin/delete-user', { id: u.id })));
+  }
+  return el('div', 'note', info, acts);
+}
+
+function logRow(ev) {
+  return el('div', 'log', el('time', '', when(ev.created_at)), el('div', '', el('em', '', ev.actor), ' ' + ev.action + ': ' + ev.detail));
+}
+
+/* ---------- admin: overview ---------- */
+async function renderOverview() {
+  const body = $('#adminbody'); body.textContent = '';
+  const [s, u] = await Promise.all([api('/api/admin/stats', null, 'GET'), api('/api/admin/users', null, 'GET')]);
+  if (!s.ok) return body.append(el('p', 'empty', s.error || 'Couldn’t load.'));
+  setPending(s.pending);
+  const tile = (n, label, alert) => el('div', 'tile' + (alert ? ' alert' : ''), el('b', '', String(n)), el('span', '', label));
+  body.append(el('div', 'tiles', tile(s.members, 'Members'), tile(s.pending, 'Waiting for approval', s.pending > 0), tile(s.suspended, 'Suspended'), tile(s.notes, 'Notes shared')));
+
+  const waiting = (u.users || []).filter(x => !x.approved);
+  const w = el('section', 'panelbox', el('h3', '', 'Waiting for approval'));
+  if (!waiting.length) w.append(el('p', 'empty', 'No one is waiting. New requests show up here.'));
+  waiting.forEach(x => w.append(userRow(x)));
+  body.append(w);
+
+  const a = el('section', 'panelbox', el('h3', '', 'Recent activity'));
+  if (!s.events.length) a.append(el('p', 'empty', 'Nothing yet. Admin actions are recorded here.'));
+  s.events.forEach(ev => a.append(logRow(ev)));
+  body.append(a);
+}
+
+/* ---------- admin: users ---------- */
+async function renderUsers() {
+  const body = $('#adminbody'); body.textContent = '';
+  const d = await api('/api/admin/users', null, 'GET');
+  if (!d.ok) return body.append(el('p', 'empty', d.error || 'Couldn’t load.'));
+  setPending(d.users.filter(u => !u.approved).length);
+  const q = el('input', 'search'); q.type = 'search'; q.placeholder = 'Search by name or email'; q.setAttribute('aria-label', 'Search users');
+  const box = el('div');
+  const draw = () => {
+    box.textContent = '';
+    const term = q.value.trim().toLowerCase();
+    const rows = d.users.filter(u => !term || (u.name + ' ' + u.email).toLowerCase().includes(term));
+    if (!rows.length) box.append(el('p', 'empty', term ? 'No users match “' + q.value + '”.' : 'No users yet.'));
+    rows.forEach(u => box.append(userRow(u)));
+  };
+  q.oninput = draw; draw();
+  body.append(q, box);
+}
+
+/* ---------- admin: notes ---------- */
+async function renderAdminNotes() {
+  const body = $('#adminbody'); body.textContent = '';
+  const d = await api('/api/admin/notes', null, 'GET');
+  if (!d.ok) return body.append(el('p', 'empty', d.error || 'Couldn’t load.'));
+  if (!d.notes.length) return body.append(el('p', 'empty', 'No notes have been uploaded yet.'));
+  d.notes.forEach(n => body.append(el('div', 'note',
+    el('div', '', el('b', '', n.title), el('small', '', n.author + ' (' + n.email + ') · ' + when(n.created_at))),
+    el('div', 'acts', btn('Delete', 'dl no', () => confirm('Delete “' + n.title + '” for everyone? The file is removed from storage too.') && act('/api/admin/notes/' + n.id, null, 'DELETE'))))));
+}
+
+/* ---------- admin: activity log ---------- */
+async function renderActivity() {
+  const body = $('#adminbody'); body.textContent = '';
+  const d = await api('/api/admin/activity', null, 'GET');
+  if (!d.ok) return body.append(el('p', 'empty', d.error || 'Couldn’t load.'));
+  if (!d.events.length) return body.append(el('p', 'empty', 'Nothing yet. Every approval, suspension and deletion is recorded here.'));
+  d.events.forEach(ev => body.append(logRow(ev)));
+}
+
+/* ---------- library ---------- */
+let allNotes = [];
+
+async function loadNotes() {
+  const d = await fetch('/api/notes', { headers: { Authorization: 'Bearer ' + token } });
+  if (d.status === 401) return leave();
+  if (d.status === 403) { leave(); return msg('This account has been suspended. Contact the admin.'); }
+  allNotes = await d.json();
+  // Subject suggestions for the upload box and the filter dropdown come from what already exists.
+  const subjects = [...new Set(allNotes.map(n => n.subject))].sort((a, b) => a.localeCompare(b));
+  const keep = $('#f-subject').value;
+  $('#subjects').replaceChildren(...subjects.map(s => { const o = document.createElement('option'); o.value = s; return o; }));
+  $('#f-subject').replaceChildren(new Option('All subjects', ''), ...subjects.map(s => new Option(s, s)));
+  $('#f-subject').value = subjects.includes(keep) ? keep : '';
+  drawNotes();
+}
+
+function drawNotes() {
+  const term = $('#q').value.trim().toLowerCase(), subj = $('#f-subject').value, sort = $('#sort').value;
+  const rows = allNotes
+    .filter(n => (!subj || n.subject === subj) && (!term || (n.title + ' ' + n.subject + ' ' + n.author).toLowerCase().includes(term)))
+    .sort((a, b) => sort === 'downloads' ? b.downloads - a.downloads : sort === 'likes' ? b.likes - a.likes : b.id - a.id);
+  const list = $('#list'); list.textContent = '';
+  if (!allNotes.length) return list.append(el('p', 'empty', 'No notes yet. Upload the first one above.'));
+  if (!rows.length) return list.append(el('p', 'empty', 'No notes match your search. Try a different word or subject.'));
+  rows.forEach(n => list.append(noteCard(n)));
+}
+['input', 'change'].forEach(ev => ['#q', '#f-subject', '#sort'].forEach(s => $(s).addEventListener(ev, drawNotes)));
+
+function noteCard(n) {
+  const plural = (c, w) => c + ' ' + w + (c === 1 ? '' : 's');
+  const meta = el('small');
+  const setMeta = () => meta.textContent = 'by ' + n.author + ' · ' + new Date(n.created_at).toLocaleDateString() + ' · ' + plural(n.downloads, 'download');
+  setMeta();
+
+  const acts = el('div', 'acts');
+  if (n.previewable) acts.append(btn('Preview', 'dl', async () => {
+    const w = window.open('', '_blank');           // open first, so the browser doesn't block the pop-up
+    if (!w) return alert('Allow pop-ups for this site to preview files.');
+    const r = await api('/api/notes/' + n.id + '/file?mode=view', null, 'GET');
+    if (r.url) w.location = r.url; else { w.close(); alert(r.error); }
+  }));
+  acts.append(btn('Download', 'dl', async () => {
+    const r = await api('/api/notes/' + n.id + '/file', null, 'GET');
+    if (!r.url) return alert(r.error);
+    const a = document.createElement('a'); a.href = r.url; a.click();
+    n.downloads++; setMeta();
+  }));
+
+  const like = btn('', 'dl like', async () => {
+    const r = await api('/api/notes/' + n.id + '/like', null, 'POST');
+    if (!r.ok) return alert(r.error);
+    n.liked = r.liked; n.likes = r.likes; paintLike();
+  });
+  const paintLike = () => { like.textContent = (n.liked ? '♥ ' : '♡ ') + n.likes; like.classList.toggle('on', n.liked); like.setAttribute('aria-pressed', n.liked); };
+  paintLike();
+  acts.append(like);
+
+  const box = el('div', 'cm'); box.hidden = true;
+  const toggle = btn('', 'dl', () => { box.hidden = !box.hidden; if (!box.hidden) loadComments(); });
+  const paintCount = () => toggle.textContent = 'Comments (' + n.comments + ')';
+  paintCount(); acts.append(toggle);
+
+  async function loadComments() {
+    const d = await api('/api/notes/' + n.id + '/comments', null, 'GET');
+    box.textContent = '';
+    if (!d.ok) return box.append(el('p', 'empty', d.error || 'Couldn’t load comments.'));
+    n.comments = d.comments.length; paintCount();
+    if (!d.comments.length) box.append(el('p', 'empty', 'No comments yet. Ask a question or add a tip.'));
+    d.comments.forEach(c => {
+      const row = el('div', 'cm-item', el('div', '', el('small', '', c.author + ' · ' + when(c.created_at)), el('p', '', c.body)));
+      if (c.canDelete) row.append(btn('Delete', 'dl no', async () => {
+        const r = await api('/api/comments/' + c.id, null, 'DELETE'); if (!r.ok) alert(r.error); loadComments();
+      }));
+      box.append(row);
+    });
+    const input = el('input'); input.placeholder = 'Add a comment'; input.maxLength = 500; input.setAttribute('aria-label', 'Add a comment');
+    const post = btn('Post', 'dl', async () => {
+      if (!input.value.trim()) return;
+      const r = await api('/api/notes/' + n.id + '/comments', { body: input.value }); if (!r.ok) return alert(r.error);
+      loadComments();
+    });
+    input.onkeydown = e => { if (e.key === 'Enter') post.click(); };
+    box.append(el('div', 'cm-form', input, post));
+  }
+
+  return el('article', 'nc', el('div', 'nc-head', el('b', '', n.title), el('span', 'tag', n.subject)), meta, acts, box);
+}
+
+$('#upform').onsubmit = async e => {
+  e.preventDefault();
+  const f = new FormData(); f.append('title', $('#u-title').value); f.append('subject', $('#u-subject').value); f.append('file', $('#u-file').files[0]);
+  const r = await fetch('/api/notes', { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: f });
+  const d = await r.json();
+  if (r.ok) { e.target.reset(); loadNotes(); } else alert(d.error);
+};
+
+if (token) enter({ token, name: localStorage.getItem('name') || '', role: localStorage.getItem('role') || 'user' }); else show('login');
+</script>
+</body>
+</html>
+</html>
